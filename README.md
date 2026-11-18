@@ -3,6 +3,24 @@
 Fills job applications (basic details, work experience, education, work-authorization answers,
 resume upload) from a profile you build once. It **never submits** an application.
 
+## Screenshots
+
+Taken on the mock application page in `tests/pages/` with placeholder data.
+
+**Before and after pressing *Fill this page***
+
+| Before | After |
+| --- | --- |
+| ![Empty application form](docs/screenshots/before.png) | ![The same form after autofill](docs/screenshots/after.png) |
+
+**Dropdowns, radios and answers filled; required fields it can't answer are outlined in orange, and the consent box is left for you**
+
+![Lower part of the form, with the side panel](docs/screenshots/review.png)
+
+**The settings page (resume upload and locked sections)**
+
+![Settings page](docs/screenshots/options.png)
+
 ## Install
 
 1. Open `chrome://extensions` in Chrome.
@@ -39,7 +57,7 @@ Open an application page, then any of:
 
 - click the floating **Autofill application** button that appears on the page,
 - click the toolbar icon, then **Fill this page**,
-- press **Option+Shift+F** (change it at `chrome://extensions/shortcuts`).
+- press **Option+Shift+F** (change it at `chrome://extensions/shortcuts`). **Option+Shift+P** shows or hides the side panel with the section switches.
 
 Afterwards, fields it could not answer but that the form requires are **outlined in orange**.
 Review the whole form before you submit.
