@@ -1,0 +1,187 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Greenhouse-style application (test page)</title>
+  <style>
+    body { font-family: sans-serif; max-width: 680px; margin: 20px auto; }
+    .field { margin: 10px 0; display: flex; flex-direction: column; gap: 3px; }
+    fieldset { border: 0; padding: 0; margin: 8px 0; }
+    legend { font-size: 13px; }
+    section { border-top: 1px solid #ddd; margin-top: 18px; padding-top: 6px; }
+    .block { border: 1px solid #eee; padding: 8px 12px; margin: 8px 0; }
+    .select__control { border: 1px solid #aaa; padding: 4px 6px; min-height: 28px; }
+    .select__value-container { display: flex; gap: 6px; }
+    .select__menu { border: 1px solid #ccc; width: 300px; background: #fff; }
+    .select__option { padding: 4px 8px; cursor: pointer; }
+    .select__option:hover { background: #eef; }
+  </style>
+</head>
+<body>
+  <h1>Backend Engineer</h1>
+  <form id="application-form">
+    <div class="field"><label for="first_name">First Name*</label><input id="first_name" type="text" required></div>
+    <div class="field"><label for="last_name">Last Name*</label><input id="last_name" type="text" required></div>
+    <div class="field"><label for="email">Email*</label><input id="email" type="text" required></div>
+    <div class="field"><label for="phone">Phone</label><input id="phone" type="tel"></div>
+    <div class="field">
+      <label for="country">Country*</label>
+      <select id="country" required>
+        <option value="">Select...</option><option>Canada</option><option>United States</option><option>India</option>
+      </select>
+    </div>
+    <div class="field"><label id="upload-label-resume">Resume/CV*</label><input type="file" id="resume" aria-labelledby="upload-label-resume" style="display:none"></div>
+    <div class="field"><label for="linkedin">LinkedIn Profile</label><input id="linkedin" type="text"></div>
+    <div class="field"><label for="website">Website</label><input id="website" type="text"></div>
+
+    <div id="app-root"></div>
+
+    <button type="submit" id="submit">Submit application</button>
+  </form>
+
+  <script>
+    window.__submitted = false;
+    document.getElementById('application-form').addEventListener('submit', (e) => { e.preventDefault(); window.__submitted = true; });
+
+    let uid = 0;
+    const el = (tag, attrs = {}) => {
+      const n = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        if (k === 'text') n.textContent = v;
+        else if (k === 'class') n.className = v;
+        else n.setAttribute(k, v);
+      }
+      return n;
+    };
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    // A react-select look-alike: control > single-value + input[role=combobox]; menu rendered on open.
+    function combo(label, options) {
+      const id = 'combo-' + (++uid);
+      const field = el('div', { class: 'field' });
+      field.append(el('label', { for: id, text: label }));
+      const control = el('div', { class: 'select__control' });
+      const vc = el('div', { class: 'select__value-container' });
+      const single = el('div', { class: 'select__single-value' });
+      const input = el('input', { id, class: 'select__input', role: 'combobox', 'aria-autocomplete': 'list', 'aria-expanded': 'false', type: 'text', autocomplete: 'off' });
+      vc.append(single, input);
+      control.append(vc);
+      const menu = el('div', { class: 'select__menu' });
+      menu.hidden = true;
+      const listbox = el('div', { role: 'listbox', id: id + '-listbox' });
+      menu.append(listbox);
+      field.append(control, menu);
+      // Real Greenhouse (react-select) adds a collapsed, invisible <input required> next to required dropdowns
+      if (/\*\s*$/.test(label)) {
+        field.append(el('input', { class: 'requiredInput', required: '', tabindex: '-1', style: 'opacity:0;height:0;width:100%;position:absolute;pointer-events:none' }));
+      }
+
+      const isAsync = typeof options === 'function';
+      function render() {
+        listbox.innerHTML = '';
+        const typed = input.value.trim();
+        let list = isAsync ? options(typed) : options;
+        if (!isAsync && typed) list = list.filter((o) => o.toLowerCase().includes(typed.toLowerCase()));
+        list.forEach((o, i) => {
+          const d = el('div', { role: 'option', class: 'select__option', id: id + '-opt-' + i, text: o });
+          d.addEventListener('click', () => choose(o));
+          listbox.append(d);
+        });
+        if (!list.length) listbox.append(el('div', { class: 'select__menu-notice', text: 'No options' }));
+      }
+      function open() {
+        menu.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+        input.setAttribute('aria-controls', id + '-listbox');
+        render();
+      }
+      function close() {
+        menu.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
+        input.removeAttribute('aria-controls');
+      }
+      function choose(o) { single.textContent = o; input.value = ''; close(); }
+      control.addEventListener('mousedown', open);
+      input.addEventListener('input', () => {
+        if (menu.hidden) open();
+        else if (isAsync) setTimeout(render, 150); // simulated network lookup
+        else render();
+      });
+      return field;
+    }
+
+    function textField(label) {
+      const id = 'f-' + (++uid);
+      const f = el('div', { class: 'field' });
+      f.append(el('label', { for: id, text: label }), el('input', { id, type: 'text' }));
+      return f;
+    }
+
+    // Month select + year input inside a fieldset, labelled only by the legend (no ids/names)
+    function dateFields(legend) {
+      const fs = el('fieldset');
+      fs.append(el('legend', { text: legend }));
+      const m = el('select', { 'aria-label': 'Month' });
+      m.append(el('option', { value: '', text: 'Month' }));
+      MONTHS.forEach((name, i) => m.append(el('option', { value: String(i + 1), text: name })));
+      fs.append(m, el('input', { type: 'text', 'aria-label': 'Year', placeholder: 'YYYY' }));
+      return fs;
+    }
+
+    function eduBlock() {
+      const b = el('div', { class: 'block' });
+      b.append(
+        combo('School*', ['Example State University', 'Sample Tech Institute', 'Placeholder College', 'Other University']),
+        combo('Degree*', ["Associate's Degree", "Bachelor's Degree", "Master's Degree", 'Doctorate']),
+        combo('Discipline*', ['Computer Science', 'Information Technology', 'Electrical Engineering', 'Other']),
+        dateFields('Start date*'),
+        dateFields('End date*')
+      );
+      return b;
+    }
+
+    function empBlock() {
+      const b = el('div', { class: 'block' });
+      const cur = el('label');
+      cur.append(el('input', { type: 'checkbox' }), document.createTextNode(' Current role'));
+      const desc = el('div', { class: 'field' });
+      desc.append(el('label', { text: 'Role description' }), el('textarea', {}));
+      b.append(textField('Company name*'), textField('Job title*'), dateFields('Start date*'), dateFields('End date'), cur, desc);
+      return b;
+    }
+
+    function section(title, makeBlock) {
+      const s = el('section');
+      s.append(el('h3', { text: title }));
+      const blocks = el('div', { class: 'blocks' });
+      blocks.append(makeBlock());
+      const add = el('button', { type: 'button', class: 'add-another-button', text: 'Add another' });
+      add.addEventListener('click', () => blocks.append(makeBlock()));
+      s.append(blocks, add);
+      return s;
+    }
+
+    const root = document.getElementById('app-root');
+    root.append(section('Education', eduBlock), section('Employment', empBlock));
+
+    const q = el('section');
+    q.append(el('h3', { text: 'Additional questions' }));
+    q.append(
+      combo('Are you legally authorized to work in the United States?*', ['Yes', 'No']),
+      combo('Will you now or in the future require sponsorship for employment visa status?*', ['Yes', 'No']),
+      combo('How did you hear about this job?', ['Indeed', 'LinkedIn', 'Referral', 'Other']),
+      combo('Gender', ['Male', 'Female', 'Non-binary', 'Decline To Self Identify']),
+      // free-text box whose long label merely mentions "relocate": must NOT receive the Yes/No relocation answer
+      textField('What is the address from which you plan on working? If you would need to relocate, please tell us where.'),
+      // typeahead: nothing until text is typed, then a lookup that returns a normalised place
+      combo('Location (City)*', (typed) => (typed ? [/^austin/i.test(typed) ? 'Austin, Texas, United States' : typed + ', United States'] : []))
+    );
+    const why = el('div', { class: 'field' });
+    why.append(el('label', { for: 'why', text: 'Why do you want to work here?*' }), el('textarea', { id: 'why', required: '' }));
+    const consent = el('label');
+    consent.append(el('input', { type: 'checkbox', id: 'consent', required: '' }), document.createTextNode(' I agree to the privacy notice*'));
+    q.append(why, consent);
+    root.append(q);
+  </script>
+</body>
+</html>

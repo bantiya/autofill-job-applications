@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Job Autofill</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="head"><h1>Job Autofill</h1><button id="min" type="button" class="min" title="Minimize" aria-label="Minimize" hidden>&rsaquo;</button></div>
+  <div id="profile" class="muted">Loading…</div>
+  <label class="check"><input type="checkbox" id="overwrite"> Overwrite fields that already have a value</label>
+  <div class="upload"><button id="upload" type="button" class="secondary">Upload resume</button><input type="file" id="resumeFile" accept=".pdf,.doc,.docx,application/pdf" hidden><span id="uploadMsg" class="muted"></span></div>
+  <details class="sections" open>
+    <summary>Sections to fill</summary>
+    <div id="sections"></div>
+  </details>
+  <button id="fill" class="primary" type="button">Fill this page</button>
+  <div id="result" aria-live="polite"></div>
+  <p class="foot"><a href="#" id="settings">Edit profile &amp; resume</a> &middot; Shortcut: Option+Shift+F</p>
+  <script src="src/basics.js"></script>
+  <script src="src/experience.js"></script>
+  <script src="src/resume-parse.js"></script>
+  <script src="src/resume-upload.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

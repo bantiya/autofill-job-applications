@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Lever-style application (test page)</title>
+  <style>
+    body { font-family: sans-serif; max-width: 640px; margin: 20px auto; }
+    label { display: block; margin-top: 12px; }
+    ul { list-style: none; padding: 0; margin: 4px 0; }
+    .application-label { font-weight: 600; margin-top: 14px; }
+    .dropdown-results { border: 1px solid #ccc; background: #fff; padding: 0; margin: 0; position: absolute; }
+    .dropdown-results li { padding: 4px 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Apply: Software Engineer</h1>
+  <form id="f">
+    <div class="application-question resume">
+      <label for="resume-upload-input">Resume/CV</label>
+      <input type="file" id="resume-upload-input" name="resume">
+    </div>
+
+    <label for="name">Full name <span>✱</span></label>
+    <input id="name" name="name" type="text" required>
+
+    <label for="email">Email <span>✱</span></label>
+    <input id="email" name="email" type="text" required>
+
+    <label for="phone">Phone</label>
+    <input id="phone" name="phone" type="text">
+
+    <label for="location-input">Current location</label>
+    <input id="location-input" name="location" type="text" autocomplete="off">
+    <ul class="dropdown-results" hidden></ul>
+
+    <label for="org">Current company</label>
+    <input id="org" name="org" type="text">
+
+    <label for="li">LinkedIn URL</label>
+    <input id="li" name="urls[LinkedIn]" type="text">
+
+    <label for="gh">GitHub URL</label>
+    <input id="gh" name="urls[GitHub]" type="text">
+
+    <label for="pf">Portfolio URL</label>
+    <input id="pf" name="urls[Portfolio]" type="text">
+
+    <!-- Bare radio groups (no fieldset), like Lever's custom-question cards -->
+    <div class="application-question">
+      <div class="application-label">Are you legally authorized to work in the United States? <span>✱</span></div>
+      <ul>
+        <li><label><input type="radio" name="cards[a][field0]" value="Yes" required> Yes</label></li>
+        <li><label><input type="radio" name="cards[a][field0]" value="No"> No</label></li>
+      </ul>
+    </div>
+    <div class="application-question">
+      <div class="application-label">Will you now or in the future require sponsorship for employment visa status?</div>
+      <ul>
+        <li><label><input type="radio" name="cards[b][field0]" value="Yes"> Yes</label></li>
+        <li><label><input type="radio" name="cards[b][field0]" value="No"> No</label></li>
+      </ul>
+    </div>
+
+    <div class="application-question">
+      <div class="application-label">Why do you want to work here? <span>✱</span></div>
+      <textarea name="cards[c][field0]" required></textarea>
+    </div>
+
+    <label for="gender">Gender</label>
+    <select id="gender" name="eeo[gender]">
+      <option value="">Select ...</option>
+      <option>Male</option><option>Female</option><option>Decline to self-identify</option>
+    </select>
+
+    <label for="race">Race</label>
+    <select id="race" name="eeo[race]">
+      <option value="">Select ...</option>
+      <option>Asian</option><option>White</option><option>Decline to self-identify</option>
+    </select>
+
+    <label for="comments">Additional information</label>
+    <textarea id="comments" name="comments"></textarea>
+
+    <label><input type="checkbox" id="consent" required> I agree to the privacy policy and consent to processing of my data</label>
+
+    <button type="submit" id="submit">Submit application</button>
+  </form>
+
+  <script>
+    window.__submitted = false;
+    document.getElementById('f').addEventListener('submit', (e) => { e.preventDefault(); window.__submitted = true; });
+
+    // Location typeahead that only accepts a click on a suggestion
+    const loc = document.getElementById('location-input');
+    const dd = document.querySelector('.dropdown-results');
+    window.__locChosen = null;
+    let timer;
+    loc.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!loc.value.trim()) { dd.hidden = true; return; }
+        dd.innerHTML = '';
+        const li = document.createElement('li');
+        li.textContent = /^austin/i.test(loc.value) ? 'Austin, TX, USA' : loc.value + ', USA';
+        li.addEventListener('click', () => { loc.value = li.textContent; window.__locChosen = li.textContent; dd.hidden = true; });
+        dd.appendChild(li);
+        dd.hidden = false;
+      }, 150);
+    });
+  </script>
+</body>
+</html>

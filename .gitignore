@@ -1,0 +1,10 @@
+# personal data: copy the *.example.js files to these names and edit
+src/basics.js
+src/answers.js
+src/education.js
+src/experience.js
+profile.json
+*.pdf
+!tests/fixtures/*.pdf
+node_modules/
+.DS_Store

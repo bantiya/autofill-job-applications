@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Controlled-input test page</title></head>
+<body>
+  <h1>Application (controlled inputs)</h1>
+  <p>Mimics React's value tracking: a plain <code>el.value = x</code> followed by an input event is
+     ignored; only a change made the way a user's typing does it updates the app state.</p>
+  <form id="f">
+    <label for="first_name">First name</label>
+    <input id="first_name" name="first_name" type="text" data-controlled>
+    <label for="last_name">Last name</label>
+    <input id="last_name" name="last_name" type="text" data-controlled>
+    <label for="email">Email</label>
+    <input id="email" name="email" type="text" data-controlled>
+    <label for="phone">Phone</label>
+    <input id="phone" name="phone" type="tel" data-controlled>
+    <input type="file" id="resume" aria-label="Resume">
+  </form>
+  <script>
+    window.__state = {};
+    const nativeDesc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    document.querySelectorAll('input[data-controlled]').forEach((input) => {
+      let tracked = '';
+      // Same trick React uses: shadow the value property on the instance and remember the last value.
+      Object.defineProperty(input, 'value', {
+        configurable: true,
+        get() { return nativeDesc.get.call(this); },
+        set(v) { tracked = String(v); nativeDesc.set.call(this, v); },
+      });
+      input.addEventListener('input', () => {
+        const current = nativeDesc.get.call(input);
+        if (current === tracked) return;     // looks programmatic: React ignores it
+        tracked = current;
+        window.__state[input.name] = current;
+      });
+    });
+  </script>
+</body>
+</html>

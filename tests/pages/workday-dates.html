@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Work Experience | Workday-like date test page</title>
+  <style>
+    body { font-family: sans-serif; margin: 24px; max-width: 640px; }
+    .field { margin: 12px 0; }
+    label { display: block; font-weight: 600; }
+    fieldset { border: 0; padding: 0; margin: 12px 0; }
+    input[type=text] { padding: 6px; box-sizing: border-box; }
+    [data-automation-id=dateInputWrapper] { display: inline-flex; gap: 4px; align-items: center; border: 1px solid #888; padding: 4px 8px; }
+    /* the real <input> sits on top of the digits that are drawn by a separate element, invisible */
+    .section { position: relative; display: inline-block; min-width: 44px; height: 28px; line-height: 28px; text-align: center; }
+    .section input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
+  </style>
+</head>
+<body>
+  <!-- Mirrors the structure of Workday's From / To date control (copied from a real application page):
+         fieldset > legend > label, a role=group wrapper, and per date: month and year "sections", each with
+         an aria-hidden display <div> and an invisible role=spinbutton <input> (the year input has tabindex=-1).
+       Behaviour seen on the real page:
+         - the year fills itself in as soon as a month is entered: month 01 gives year 2001
+         - the month is stored without its leading zero ("01" is kept as "1")
+       Extra, for robustness: every edit is applied to a snapshot of the state taken when the edit began,
+       so two edits landing close together lose the first one.
+       Query string:  ?slow=1  makes the page's state updates slower (220 ms). -->
+  <section data-automation-id="workExperience-1">
+    <h3>Work Experience 1</h3>
+    <div class="field"><label for="jt">Job Title*</label><input id="jt" type="text" data-automation-id="jobTitle" required></div>
+    <div class="field"><label for="co">Company*</label><input id="co" type="text" data-automation-id="company" required></div>
+    <div class="field"><label for="cur">I currently work here</label><input id="cur" type="checkbox" data-automation-id="currentlyWorkHere"></div>
+    <div id="dates"></div>
+  </section>
+
+  <script>
+    const DELAY = new URLSearchParams(location.search).has('slow') ? 220 : 60;
+    const state = {};
+    window.__edits = [];
+    function build(which, title) {
+      const id = 'workExperience-1--' + which;
+      const wrap = document.createElement('div');
+      wrap.setAttribute('data-automation-id', 'formField-' + which);
+      wrap.innerHTML =
+        '<fieldset><legend><label id="label-' + which + '"><span>' + title + '<abbr aria-hidden="true">*</abbr></span></label></legend>' +
+        '<div aria-hidden="true" id="helpText-' + id + '"></div>' +
+        '<div id="' + id + '" role="group" data-automation-id="dateInputWrapper">' +
+          '<div class="section" id="' + id + '-dateSectionMonth">' +
+            '<div aria-hidden="true" data-automation-id="dateSectionMonth-display"></div>' +
+            '<input role="spinbutton" type="text" aria-label="Month" aria-valuemax="12" aria-valuemin="1" aria-required="true" ' +
+              'id="' + id + '-dateSectionMonth-input" data-automation-id="dateSectionMonth-input">' +
+          '</div><div>/</div>' +
+          '<div class="section" id="' + id + '-dateSectionYear" tabindex="0">' +
+            '<div aria-hidden="true" data-automation-id="dateSectionYear-display"></div>' +
+            '<input role="spinbutton" type="text" aria-label="Year" aria-valuemax="9999" aria-valuemin="1" aria-required="true" tabindex="-1" ' +
+              'id="' + id + '-dateSectionYear-input" data-automation-id="dateSectionYear-input">' +
+          '</div>' +
+        '</div></fieldset>';
+      document.getElementById('dates').appendChild(wrap);
+      state[which] = { m: '', y: '' };
+      ['m', 'y'].forEach((part) => {
+        const el = wrap.querySelector(part === 'm' ? '[data-automation-id="dateSectionMonth-input"]' : '[data-automation-id="dateSectionYear-input"]');
+        el.addEventListener('input', () => {
+          const snapshot = JSON.parse(JSON.stringify(state[which]));   // state as it was when this edit began
+          const typed = el.value;
+          window.__edits.push(which + '.' + part + '=' + typed);
+          const digits = typed.replace(/\D/g, '');
+          if (digits && digits.length < (part === 'm' ? 2 : 4) && /^\d+$/.test(typed) && el.dataset.keys) return; // still being typed key by key
+          setTimeout(() => {
+            snapshot[part] = clean(part, typed);
+            if (part === 'm' && snapshot.m && !snapshot.y) snapshot.y = String(2000 + Number(snapshot.m)); // Workday defaults the year
+            state[which] = snapshot;
+            render(which, wrap);
+          }, DELAY);
+        });
+        el.addEventListener('keydown', () => { el.dataset.keys = '1'; });
+      });
+      render(which, wrap);
+    }
+    function clean(part, v) {
+      const d = String(v).replace(/\D/g, '');
+      if (!d) return '';
+      if (part === 'm') { const n = Number(d.slice(0, 2)); return n >= 1 && n <= 12 ? String(n) : ''; }
+      return d.length <= 2 ? String(2000 + Number(d)) : d.slice(0, 4);
+    }
+    function render(which, wrap) {
+      const s = state[which];
+      const mi = wrap.querySelector('[data-automation-id="dateSectionMonth-input"]');
+      const yi = wrap.querySelector('[data-automation-id="dateSectionYear-input"]');
+      if (mi.value !== s.m) mi.value = s.m;
+      if (yi.value !== s.y) yi.value = s.y;
+      wrap.querySelector('[data-automation-id="dateSectionMonth-display"]').textContent = s.m ? s.m.padStart(2, '0') : 'MM';
+      wrap.querySelector('[data-automation-id="dateSectionYear-display"]').textContent = s.y || 'YYYY';
+      wrap.querySelector('[id^="helpText"]').textContent = 'current value is ' + (s.m || '') + '/' + (s.y || '');
+    }
+    build('startDate', 'From');
+    build('endDate', 'To');
+    window.__state = state;
+    window.__render = () => document.querySelectorAll('[data-automation-id^="formField-"]').forEach((w, i) => render(i ? 'endDate' : 'startDate', w));
+  </script>
+</body>
+</html>

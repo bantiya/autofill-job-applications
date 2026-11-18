@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>My Experience | Workday-like test page</title>
+  <style>
+    body { font-family: sans-serif; margin: 24px; max-width: 640px; }
+    .field { margin: 12px 0; position: relative; }
+    label { display: block; font-weight: 600; }
+    input[type=text] { width: 100%; padding: 6px; box-sizing: border-box; }
+    [data-automation-activepopup] { border: 1px solid #999; background: #fff; max-height: 240px; overflow: auto; }
+    .row { display: flex; gap: 8px; padding: 6px 8px; cursor: default; }
+    .pill { display: inline-flex; gap: 6px; margin: 4px 4px 0 0; padding: 2px 8px; background: #e6eefc; border-radius: 12px; }
+    .notice { padding: 6px 8px; color: #666; }
+  </style>
+</head>
+<body>
+  <!-- Mimics the Workday "Skills" picker. Variants via query string:
+         ?live=1      results also appear while typing (Enter always works)
+         ?rowclick=1  rows have no checkbox; clicking the row selects the skill -->
+  <h2 data-automation-id="pageHeader">My Experience</h2>
+
+  <div class="field" data-automation-id="formField-firstName">
+    <label for="fn">First Name*</label>
+    <input id="fn" type="text" data-automation-id="legalNameSection_firstName" required>
+  </div>
+  <div class="field" data-automation-id="formField-lastName">
+    <label for="ln">Last Name*</label>
+    <input id="ln" type="text" data-automation-id="legalNameSection_lastName" required>
+  </div>
+  <div class="field" data-automation-id="formField-email">
+    <label for="em">Email*</label>
+    <input id="em" type="text" data-automation-id="email" required>
+  </div>
+
+  <!-- an unrelated prompt with its own pill, to prove pills are scoped per picker -->
+  <div class="field" data-automation-id="formField-source">
+    <label for="src">How Did You Hear About Us?</label>
+    <input id="src" type="text" data-automation-id="searchBox" placeholder="Search">
+    <div data-automation-id="selectedItemList"><div class="pill" data-automation-id="selectedItem"><span>LinkedIn</span><button type="button" aria-label="Delete">x</button></div></div>
+  </div>
+
+  <div class="field" data-automation-id="formField-skills">
+    <label for="skills-input">Skills</label>
+    <div data-automation-id="multiSelectContainer" data-uxi-widget-type="multiselect">
+      <input id="skills-input" type="text" data-automation-id="searchBox" placeholder="Type to Add Skills" autocomplete="off">
+      <div id="popup-slot"></div>
+      <div data-automation-id="selectedItemList" id="pills"></div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const LIVE = params.has('live');
+    const ROWCLICK = params.has('rowclick');
+    const CATALOG = ['Java', 'JavaScript', 'Java (Programming Language)', 'Python', 'Python (Programming Language)', 'SQL',
+      'Spring Boot', 'React', 'React VR', 'AWS Tools', 'Amazon Web Services', 'Node.js', 'Apache Kafka', 'Docker',
+      'Kubernetes', 'Building Codes', 'C#', 'C', 'Go', 'Google Cloud Platform', 'GraphQL'];
+    const LOOSE = { codex: ['Building Codes'] };
+    const selected = new Set(['Python']);
+    window.__typed = [];            // every value ever placed in the skills box
+    window.__searches = [];         // queries that actually ran
+    const input = document.getElementById('skills-input');
+    const slot = document.getElementById('popup-slot');
+    const pills = document.getElementById('pills');
+
+    function renderPills() {
+      pills.innerHTML = '';
+      selected.forEach((name) => {
+        const d = document.createElement('div');
+        d.className = 'pill';
+        d.setAttribute('data-automation-id', 'selectedItem');
+        d.innerHTML = '<span></span><button type="button" aria-label="Delete">x</button>';
+        d.querySelector('span').textContent = name;
+        d.querySelector('button').addEventListener('click', () => { selected.delete(name); renderPills(); });
+        pills.appendChild(d);
+      });
+    }
+    function choose(name, on) {
+      if (on) selected.add(name); else selected.delete(name);
+      renderPills();
+    }
+    function search(q) {
+      window.__searches.push(q);
+      const ql = q.trim().toLowerCase();
+      let hits = CATALOG.filter((n) => n.toLowerCase().includes(ql));
+      (LOOSE[ql] || []).forEach((n) => hits.push(n));
+      slot.innerHTML = '';
+      const pop = document.createElement('div');
+      pop.setAttribute('data-automation-activepopup', 'true');
+      if (!hits.length) {
+        pop.innerHTML = '<div class="notice">No Items.</div>';
+      }
+      hits.forEach((name) => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.setAttribute('role', 'option');
+        row.setAttribute('data-automation-id', 'promptOption');
+        if (ROWCLICK) {
+          row.innerHTML = '<span></span>';
+          row.querySelector('span').textContent = name;
+          row.addEventListener('click', () => choose(name, true));
+        } else {
+          row.innerHTML = '<input type="checkbox"><span></span>';
+          row.querySelector('span').textContent = name;
+          const cb = row.querySelector('input');
+          cb.checked = selected.has(name);
+          cb.addEventListener('change', () => choose(name, cb.checked)); // ticking the box selects; the row itself does nothing
+        }
+        pop.appendChild(row);
+      });
+      slot.appendChild(pop);
+    }
+    input.addEventListener('input', () => {
+      window.__typed.push(input.value);
+      if (!input.value) { slot.innerHTML = ''; return; }
+      if (LIVE) setTimeout(() => search(input.value), 250);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { slot.innerHTML = ''; return; }
+      if (e.key === 'Enter' && input.value.trim()) setTimeout(() => search(input.value), 350);
+    });
+    renderPills();
+  </script>
+</body>
+</html>

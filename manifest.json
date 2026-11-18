@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "Job Autofill",
+  "version": "0.1.0",
+  "description": "Fills job applications (basic details, work experience, education, work authorization) from a profile built from your resume. Never submits anything.",
+  "permissions": ["storage", "activeTab", "webNavigation"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Job Autofill",
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "commands": {
+    "fill-application": {
+      "suggested_key": {
+        "default": "Alt+Shift+F",
+        "mac": "Alt+Shift+F"
+      },
+      "description": "Autofill the application on this page"
+    },
+    "toggle-panel": {
+      "suggested_key": { "default": "Alt+Shift+P", "mac": "Alt+Shift+P" },
+      "description": "Show or hide the Job Autofill side panel"
+    }
+  },
+  "web_accessible_resources": [
+    { "resources": ["popup.html"], "matches": ["<all_urls>"] }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "src/text.js",
+        "src/education.js",
+        "src/basics.js",
+        "src/answers.js",
+        "src/experience.js",
+        "src/util.js",
+        "src/matcher.js",
+        "src/filler.js",
+        "src/adapters/generic.js",
+        "src/adapters/greenhouse.js",
+        "src/adapters/lever.js",
+        "src/adapters/workday.js",
+        "src/content.js"
+      ],
+      "all_frames": true,
+      "run_at": "document_idle"
+    }
+  ]
+}

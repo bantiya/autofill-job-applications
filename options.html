@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Job Autofill — your profile</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <header>
+    <h1>Job Autofill — your profile</h1>
+    <p class="muted">Everything here is stored only in this browser (<code>chrome.storage.local</code>). Nothing is sent anywhere. The extension fills forms but never submits them.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Resume file</h2>
+      <p class="muted">Uploaded automatically to resume fields on application pages. PDF or Word, up to 4&nbsp;MB. A <b>PDF</b> is also read for your work-experience bullet points, which are filled into the Description boxes. Upload the resume you are using for the application.</p>
+      <div class="row">
+        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx,application/pdf">
+        <button type="button" id="removeResume" class="secondary">Remove</button>
+      </div>
+      <div id="resumeInfo" class="muted"></div>
+    </section>
+
+    <section>
+      <h2>Import / export JSON</h2>
+      <p class="muted">Paste a profile as JSON (see <code>sample-profile.json</code> for the shape), then load it into the form below. You still need to press <b>Save profile</b> afterwards. Basic details, Work experience, Education, Common answers and Self-identification are locked and never read from JSON.</p>
+      <textarea id="json" rows="8" spellcheck="false" placeholder='{ "basics": { "firstName": "…" }, "experience": [ … ] }'></textarea>
+      <div class="row">
+        <button type="button" id="importBtn" class="secondary">Load JSON into form</button>
+        <button type="button" id="exportBtn" class="secondary">Show current JSON</button>
+        <button type="button" id="downloadBtn" class="secondary">Download JSON</button>
+        <button type="button" id="sampleBtn" class="secondary">Insert sample</button>
+        <span id="importMsg" class="muted"></span>
+      </div>
+    </section>
+
+    <div id="form"></div>
+
+    
+  </main>
+
+  <footer>
+    <button type="button" id="save" class="primary">Save profile</button>
+    <span id="saveMsg" class="muted"></span>
+  </footer>
+
+  <script src="src/education.js"></script>
+  <script src="src/basics.js"></script>
+  <script src="src/answers.js"></script>
+  <script src="src/experience.js"></script>
+  <script src="src/resume-parse.js"></script>
+  <script src="src/resume-upload.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

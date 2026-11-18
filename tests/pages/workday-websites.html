@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>My Experience | Workday-like websites</title></head>
+<body>
+  <!-- Workday's Websites list: one "URL" box per link and an "Add" button; LinkedIn has its own box.
+       ?nolinkedin=1 removes the dedicated LinkedIn box so LinkedIn must go into the list too. -->
+  <section data-uxi-widget-type="x" data-automation-id="websiteSection">
+    <h2>Websites</h2>
+    <div id="sites"></div>
+    <button type="button" id="add" data-automation-id="add-button">Add</button>
+  </section>
+  <section data-automation-id="linkedInSection" id="li-sec">
+    <h2>Social Network URLs</h2>
+    <div><label for="li">LinkedIn</label><input id="li" type="text" data-automation-id="linkedinQuestion"></div>
+  </section>
+  <section><h2>Education</h2><div id="edu"><h3>Education 1</h3></div><button type="button" id="addedu" data-automation-id="add-button">Add Another</button></section>
+  <script>
+    if (new URLSearchParams(location.search).has('nolinkedin')) document.getElementById('li-sec').remove();
+    let n = 0;
+    window.__eduAdds = 0;
+    function addUrl() {
+      n++;
+      const d = document.createElement('div');
+      d.setAttribute('data-automation-id', 'formField-url');
+      d.innerHTML = '<label for="url' + n + '">URL</label><input id="url' + n + '" type="text" data-automation-id="url">';
+      document.getElementById('sites').appendChild(d);
+    }
+    addUrl();
+    document.getElementById('add').addEventListener('click', addUrl);
+    document.getElementById('addedu').addEventListener('click', () => { window.__eduAdds++; });
+    for (let i = 0; i < 12; i++) document.body.appendChild(document.createElement('span')).setAttribute('data-automation-id', 'f' + i);
+  </script>
+</body></html>

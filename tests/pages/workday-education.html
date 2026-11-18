@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>My Experience | Workday-like education test page</title>
+  <style>
+    body { font-family: sans-serif; margin: 24px; max-width: 640px; }
+    .field { margin: 12px 0; }
+    label { display: block; font-weight: 600; }
+    input[type=text] { padding: 6px; width: 320px; box-sizing: border-box; }
+    button[aria-haspopup] { padding: 6px; width: 320px; text-align: left; }
+    [data-automation-id=multiSelectContainer] { display: inline-flex; gap: 6px; align-items: center; border: 1px solid #888; padding: 4px; width: 320px; flex-wrap: wrap; }
+    [data-automation-id=multiSelectContainer] input { border: 0; width: 140px; }
+    [data-automation-id=selectedItem] { background: #eee; padding: 2px 6px; }
+    [data-automation-activepopup=true] { position: absolute; background: #fff; border: 1px solid #888; min-width: 320px; z-index: 10; }
+    [role=option], [data-automation-id=promptOption] { padding: 6px 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <!-- Mirrors the parts of Workday's Education block that matter:
+         - School or University: a plain text box
+         - Degree: a <button aria-haspopup="listbox"> that reads "Select One" and opens a list in a popup
+         - Field of Study: a search box (data-automation-id="searchBox"). You type, press Enter, pick a row
+           and a pill appears. Text that is typed but never picked is thrown away when the box loses focus.
+           Searching is loose, like Workday's: any shared word lists a row, so exact names must be checked.
+       Query string:
+         degrees = default | exact | paren | none | stem | twomasters   (what the Degree list offers)
+         fields  = default | exact | none                              (what the Field of Study catalogue holds)
+         checkbox=1  rows carry a checkbox and only ticking it selects
+         slow=1      slower search results -->
+  <section data-automation-id="educationSection">
+    <h2>Education</h2>
+    <div id="blocks"></div>
+    <button type="button" id="add" data-automation-id="add-button">Add Another</button>
+  </section>
+  <section>
+    <h2>Work Experience</h2>
+    <div class="field"><label for="jt">Job Title*</label><input id="jt" type="text"></div>
+  </section>
+
+  <script>
+    const Q = new URLSearchParams(location.search);
+    const DEGREES = {
+      default: ['High School', "Associate's Degree", "Bachelor's Degree", "Master's/Advanced Degree", 'Doctorate'],
+      exact: ["Bachelor's Degree", "Master's/Advanced Degree", 'Bachelor of Engineering', 'Master of Science'],
+      paren: ['Bachelor of Engineering (BE)', 'Master of Science (MS)', 'Doctorate (PhD)'],
+      none: ['Certificate', 'Diploma', 'High School'],
+      stem: ['Undergraduate Bachelor Programme', 'Graduate Master Programme', 'Doctorate'],
+      twomasters: ['Bachelor of Science', 'Master of Arts', 'Master of Business Administration'],
+    };
+    const FIELDS = {
+      default: ['Computer and Information Science', 'Information Technology', 'Computer Engineering', 'Computer Networking', 'Information Science'],
+      exact: ['Computer Science', 'Computer Information Systems', 'Computer and Information Science', 'Information Technology', 'Computer Engineering'],
+      none: ['Basket Weaving', 'Marine Biology'],
+    };
+    const degrees = DEGREES[Q.get('degrees') || 'default'];
+    const fields = FIELDS[Q.get('fields') || 'default'];
+    const DELAY = Q.has('slow') ? 600 : 100;
+    window.__searches = [];
+    window.__typedWithoutEnter = [];
+    window.__popup = null;
+
+    function closePopup() { if (window.__popup) { window.__popup.remove(); window.__popup = null; } }
+    document.addEventListener('mousedown', (e) => {
+      if (window.__popup && !window.__popup.contains(e.target) && !e.target.closest('button[aria-haspopup], [data-automation-id=multiSelectContainer]')) closePopup();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
+
+    function openPopup(anchor, html) {
+      closePopup();
+      const pop = document.createElement('div');
+      pop.setAttribute('data-automation-activepopup', 'true');
+      pop.innerHTML = html;
+      const r = anchor.getBoundingClientRect();
+      pop.style.left = (r.left + scrollX) + 'px';
+      pop.style.top = (r.bottom + scrollY) + 'px';
+      document.body.appendChild(pop);
+      window.__popup = pop;
+      return pop;
+    }
+
+    let blockCount = 0;
+    function addBlock() {
+      const n = ++blockCount;
+      const b = document.createElement('div');
+      b.setAttribute('data-automation-id', 'education-' + n);
+      b.innerHTML =
+        '<h3>Education ' + n + '</h3>' +
+        '<div class="field" data-automation-id="formField-schoolName"><label for="education-' + n + '--school">School or University<abbr aria-hidden="true">*</abbr></label>' +
+          '<input type="text" id="education-' + n + '--school" data-automation-id="school" aria-required="true"></div>' +
+        '<div class="field" data-automation-id="formField-degree" data-uxi-widget-type="selectInputContainer"><label for="education-' + n + '--degree">Degree<abbr aria-hidden="true">*</abbr></label>' +
+          '<button type="button" aria-haspopup="listbox" aria-label="Degree Select One Required" id="education-' + n + '--degree" data-automation-id="degree">Select One</button></div>' +
+        '<div class="field" data-automation-id="formField-fieldOfStudy" data-uxi-widget-type="multiselect"><label for="education-' + n + '--fieldOfStudy">Field of Study<abbr aria-hidden="true">*</abbr></label>' +
+          '<div data-automation-id="multiSelectContainer"><span class="pills"></span>' +
+          '<input type="text" id="education-' + n + '--fieldOfStudy" data-automation-id="searchBox" aria-required="true" autocomplete="off"></div></div>' +
+        '<div class="field" data-automation-id="formField-gpa"><label for="education-' + n + '--gpa">Overall Result (GPA)</label>' +
+          '<input type="text" id="education-' + n + '--gpa" data-automation-id="gpa"></div>';
+      document.getElementById('blocks').appendChild(b);
+      wireDegree(b.querySelector('button[aria-haspopup]'));
+      wireField(b.querySelector('input[data-automation-id=searchBox]'));
+    }
+
+    function wireDegree(btn) {
+      btn.addEventListener('click', () => {
+        if (window.__popup && window.__popup.dataset.owner === btn.id) { closePopup(); return; }
+        const pop = openPopup(btn, '<ul role="listbox" tabindex="-1">' + degrees.map((d) => '<li role="option">' + d + '</li>').join('') + '</ul>');
+        pop.dataset.owner = btn.id;
+        pop.querySelectorAll('[role=option]').forEach((li) => li.addEventListener('click', () => {
+          btn.textContent = li.textContent;
+          closePopup();
+        }));
+      });
+    }
+
+    const words = (s) => String(s).toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3);
+    function wireField(input) {
+      const box = input.closest('[data-automation-id=multiSelectContainer]');
+      const pills = box.querySelector('.pills');
+      const addPill = (text) => {
+        if ([...pills.querySelectorAll('[data-automation-id=selectedItem] span')].some((x) => x.textContent === text)) return;
+        const p = document.createElement('div');
+        p.setAttribute('data-automation-id', 'selectedItem');
+        p.innerHTML = '<span></span><button type="button" aria-label="delete">✕</button>';
+        p.querySelector('span').textContent = text;
+        p.querySelector('button').addEventListener('click', () => p.remove());
+        pills.appendChild(p);
+      };
+      input.addEventListener('input', () => { window.__typedWithoutEnter.push(input.value); });
+      input.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const q = input.value;
+        window.__searches.push(q);
+        setTimeout(() => {
+          const qw = words(q);
+          const hits = fields.filter((f) => words(f).some((w) => qw.includes(w)));
+          if (!hits.length) { openPopup(box, '<div>No Items.</div>'); return; }
+          const rows = hits.map((h) => '<div data-automation-id="promptOption" data-automation-label="' + h + '">' +
+            (Q.has('checkbox') ? '<input type="checkbox"> ' : '') + '<div>' + h + '</div></div>').join('');
+          const pop = openPopup(box, rows);
+          pop.querySelectorAll('[data-automation-id=promptOption]').forEach((row) => {
+            const label = row.getAttribute('data-automation-label');
+            const cb = row.querySelector('input[type=checkbox]');
+            if (cb) cb.addEventListener('click', () => { if (cb.checked) addPill(label); });
+            else row.addEventListener('click', () => addPill(label));
+          });
+        }, DELAY);
+      });
+      // Workday throws away text that was typed but never picked from the list.
+      input.addEventListener('blur', () => setTimeout(() => { input.value = ''; }, 120));
+    }
+
+    document.getElementById('add').addEventListener('click', () => addBlock());
+    addBlock();
+  </script>
+</body>
+</html>
