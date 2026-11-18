@@ -130,21 +130,6 @@ async function main() {
     await sw.evaluate(() => chrome.storage.local.remove('sections'));
     await p.close();
 
-    // Universal radio-button switch: off = every radio untouched, everything else still filled.
-    {
-      const r = await open('lever-like.html');
-      await sw.evaluate(() => chrome.storage.local.set({ sections: { radios: false } }));
-      await fill(r);
-      check('radios off: no radio is checked', await r.$$eval('input[type=radio]:checked', (n) => n.length), 0);
-      check('radios off: other fields still filled', await r.$eval('#email', (e) => e.value), 'alex.example@example.com');
-      await sw.evaluate(() => chrome.storage.local.remove('sections'));
-      await r.close();
-      const r2 = await open('lever-like.html');
-      await fill(r2);
-      check('radios on (default): work auth radio filled', await r2.$$eval('input[type=radio]:checked', (n) => n.length), (n) => n > 0);
-      await r2.close();
-    }
-
     const g = await open('greenhouse-like.html');
     await sw.evaluate(() => chrome.storage.local.set({ sections: { experience: false, education: false } }));
     await fill(g);
@@ -168,11 +153,20 @@ async function main() {
     check('switching off is stored', (await sw.evaluate(() => chrome.storage.local.get('sections'))).sections, { experience: false });
     await sw.evaluate(() => chrome.storage.local.remove('sections'));
     await pop.reload();
-    await pop.waitForSelector('#radioSwitch input', { state: 'attached' });
-    check('universal radio switch is on by default', await pop.$eval('#radioSwitch input', (i) => i.checked), true);
-    await pop.locator('#radioSwitch input').evaluate((e) => e.click());
+    await pop.waitForSelector('#allSwitch input', { state: 'attached' });
+    check('master switch is on when every section is on', await pop.$eval('#allSwitch input', (i) => i.checked), true);
+    await pop.locator('#allSwitch input').evaluate((e) => e.click());
     await pop.waitForTimeout(200);
-    check('radio switch off is stored', (await sw.evaluate(() => chrome.storage.local.get('sections'))).sections, { radios: false });
+    check('master off switches every section off', await pop.$$eval('#sections input', (n) => n.map((i) => i.checked)), Array(8).fill(false));
+    check('master off is stored for every section', Object.values((await sw.evaluate(() => chrome.storage.local.get('sections'))).sections), Array(8).fill(false));
+    await pop.locator('#sections input[data-section="skills"]').evaluate((e) => e.click());
+    await pop.locator('#sections input[data-section="education"]').evaluate((e) => e.click());
+    await pop.waitForTimeout(200);
+    check('then single sections can be turned on', (await sw.evaluate(() => chrome.storage.local.get('sections'))).sections, (x) => JSON.stringify(Object.entries(x).filter(([, v]) => v).map(([k]) => k).sort()) === '["education","skills"]' && Object.keys(x).length === 8);
+    check('master stays off while some are off', await pop.$eval('#allSwitch input', (i) => i.checked), false);
+    await pop.locator('#allSwitch input').evaluate((e) => e.click());
+    await pop.waitForTimeout(200);
+    check('master on switches every section on', await pop.$$eval('#sections input', (n) => n.map((i) => i.checked)), Array(8).fill(true));
     await sw.evaluate(() => chrome.storage.local.remove('sections'));
     await pop.close();
   }

@@ -62,6 +62,13 @@ Open an application page, then any of:
 Afterwards, fields it could not answer but that the form requires are **outlined in orange**.
 Review the whole form before you submit.
 
+## Switches
+
+The side panel / popup has a switch per section (basic details, experience, education, skills,
+answers, self-identification, resume, cover letter) and an **All sections** master switch at the
+top. Master on turns every section on, master off turns every section off. After that you can turn
+single sections back on (for example only Skills and Education). Settings are remembered.
+
 ## Safety rules (built in)
 
 - Never clicks Submit / Apply / Next.

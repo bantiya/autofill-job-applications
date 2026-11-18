@@ -25,28 +25,42 @@
     const state = sections || {};
     const box = $('sections');
     box.textContent = '';
+    const inputs = [];
     const addSwitch = (target, id, label, title) => {
       const row = el('label', null, 'sw');
       if (title) row.title = title;
       const input = el('input');
       input.type = 'checkbox';
-      input.dataset.section = id;
-      input.checked = state[id] !== false;
-      input.addEventListener('change', async () => {
-        const cur = (await chrome.storage.local.get('sections')).sections || {};
-        cur[id] = input.checked;
-        await chrome.storage.local.set({ sections: cur });
-      });
+      if (id) input.dataset.section = id;
+      input.checked = id ? state[id] !== false : true;
       row.appendChild(el('span', label));
       row.appendChild(input);
       row.appendChild(el('i', null, 'slider'));
       target.appendChild(row);
+      return input;
     };
-    // Universal switch: when off, no radio button on the page is touched (they are still flagged if required).
-    const master = $('radioSwitch');
+    // Master switch: on = every section on, off = every section off. Sections can then be switched
+    // individually; the master shows "on" only while all of them are on.
+    const master = $('allSwitch');
     master.textContent = '';
-    addSwitch(master, 'radios', 'Radio buttons (all questions)', 'Turn off to leave every radio button untouched');
-    SECTIONS.forEach(([id, label]) => addSwitch(box, id, label));
+    const allInput = addSwitch(master, null, 'All sections', 'Turn every section on or off at once');
+    const syncMaster = () => { allInput.checked = inputs.every((i) => i.checked); };
+    SECTIONS.forEach(([id, label]) => {
+      const input = addSwitch(box, id, label);
+      inputs.push(input);
+      input.addEventListener('change', async () => {
+        const cur = (await chrome.storage.local.get('sections')).sections || {};
+        cur[id] = input.checked;
+        await chrome.storage.local.set({ sections: cur });
+        syncMaster();
+      });
+    });
+    allInput.addEventListener('change', async () => {
+      const cur = (await chrome.storage.local.get('sections')).sections || {};
+      inputs.forEach((i) => { i.checked = allInput.checked; cur[i.dataset.section] = allInput.checked; });
+      await chrome.storage.local.set({ sections: cur });
+    });
+    syncMaster();
   }
 
   if (window.top !== window) {
