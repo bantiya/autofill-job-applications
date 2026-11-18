@@ -202,3 +202,33 @@ test('the fill takes experience from the locked list plus the resume bullets', (
   const p = F.withLockedEducation({ experience: [{ company: 'Evil Corp' }] }, { parsed: [{ company: 'Example Corp', description: '• X' }] });
   assert.deepStrictEqual(p.experience.map((e) => [e.company, e.title, e.description]), [['Example Corp', 'Software Developer', '• X'], ['Sample Inc', 'Software Engineer', '']]);
 });
+
+// ---- technical skills: read from the resume, not from a fixed list --------------------------
+test('skills are read from the Technical Skills section, category labels dropped', () => {
+  const lines = [
+    'PROFESSIONAL EXPERIENCE', 'Example Corporation Jan 2024 - Sep 2026', '• Did a thing.', '',
+    'TECHNICAL SKILLS',
+    'Languages: Java, Python, JavaScript, TypeScript, SQL',
+    'Frameworks: Spring Boot, React, Node.js (Express, Fastify),', 'Django',
+    'Cloud & DevOps: AWS, Docker, Kubernetes, CI/CD, Java.',
+    '', 'EDUCATION', 'Some University 2017 - 2021', 'Skills: Not Me',
+  ];
+  assert.deepStrictEqual(PARSE.extractSkills(lines), [
+    'Java', 'Python', 'JavaScript', 'TypeScript', 'SQL', 'Spring Boot', 'React', 'Node.js (Express, Fastify)', 'Django',
+    'AWS', 'Docker', 'Kubernetes', 'CI/CD',
+  ]);
+});
+
+test('skills: plain lists, bullets, other heading names, nothing found', () => {
+  assert.deepStrictEqual(PARSE.extractSkills(['Skills', '• Go, Rust', '• C++ | R', 'PROJECTS', 'X']), ['Go', 'Rust', 'C++', 'R']);
+  assert.deepStrictEqual(PARSE.extractSkills(['Skills & Tools', 'Git; Jira; Linux']), ['Git', 'Jira', 'Linux']);
+  assert.deepStrictEqual(PARSE.extractSkills(['EXPERIENCE', 'Example Corporation', '• Did things.']), []);
+});
+
+test('the fill uses the resume skills when there are some, else the saved list', () => {
+  const JAf = require('../src/filler.js');
+  const saved = { skills: ['Saved A', 'Saved B'] };
+  assert.deepStrictEqual(JAf.filler.withLockedEducation(saved, { skills: ['Java', 'Go'] }).skills, ['Java', 'Go']);
+  assert.deepStrictEqual(JAf.filler.withLockedEducation(saved, { skills: [] }).skills, ['Saved A', 'Saved B']);
+  assert.deepStrictEqual(JAf.filler.withLockedEducation(saved, null).skills, ['Saved A', 'Saved B']);
+});

@@ -67,6 +67,10 @@
         return Object.assign({}, e, { description: hit ? hit.description || '' : '' });
       });
     }
+    // Skills come from the technical-skills section of the uploaded resume; the saved list is only a fallback
+    // (no resume, a non-PDF resume, or a resume without a skills section).
+    const fromResume = resume && Array.isArray(resume.skills) ? resume.skills.filter(Boolean) : [];
+    if (fromResume.length) out.skills = fromResume;
     const A = JA.answers;
     if (A && A.locked) { out.application = A.application; out.eeo = A.eeo; }
     return out;

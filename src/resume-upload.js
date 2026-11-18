@@ -36,6 +36,19 @@
     }
   }
 
+  // Everything read from a PDF resume: bullets per job and the technical skills. null for non-PDF / unreadable.
+  async function readResume(file) {
+    if (!/pdf/i.test(file.type) && !/\.pdf$/i.test(file.name)) return null;
+    try {
+      const lines = await pdfLines(await file.arrayBuffer());
+      const parsed = JA.resumeParse.extractExperience(lines, JA.experience.entries)
+        .map((x) => ({ company: x.company, description: x.description, count: x.bullets.length }));
+      return { parsed, skills: JA.resumeParse.extractSkills(lines) };
+    } catch (e) {
+      return null;
+    }
+  }
+
   function readBase64(file) {
     return new Promise((resolve, reject) => {
       const r = new FileReader();
@@ -45,5 +58,5 @@
     });
   }
 
-  JA.resumeUpload = { pdfLines, parseResume, readBase64 };
+  JA.resumeUpload = { pdfLines, parseResume, readResume, readBase64 };
 })(typeof window !== 'undefined' ? window : globalThis);

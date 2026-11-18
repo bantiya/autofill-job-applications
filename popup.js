@@ -144,11 +144,14 @@
     try {
       const U = window.JA.resumeUpload;
       const data = await U.readBase64(f);
-      const parsed = await U.parseResume(f);
-      await chrome.storage.local.set({ resume: { name: f.name, type: f.type || 'application/pdf', size: f.size, data, parsed } });
+      const read = await U.readResume(f);
+      const parsed = read ? read.parsed : null;
+      const skills = read ? read.skills : [];
+      await chrome.storage.local.set({ resume: { name: f.name, type: f.type || 'application/pdf', size: f.size, data, parsed, skills } });
       $('resumeFile').value = '';
-      const isPdf = parsed !== null;
-      msg.textContent = isPdf ? 'Bullets read: ' + parsed.map((x) => `${x.company} ${x.count}`).join(', ') : 'Attached (bullets are read from PDFs only).';
+      msg.textContent = read
+        ? 'Bullets read: ' + parsed.map((x) => `${x.company} ${x.count}`).join(', ') + '. Skills found: ' + skills.length
+        : 'Attached (bullets and skills are read from PDFs only).';
       await init();
     } catch (e) {
       msg.className = 'err';

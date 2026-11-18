@@ -222,7 +222,7 @@
 
     const skills = sectionBox('Skills & cover letter');
     const g = make('div', { className: 'grid' });
-    g.appendChild(field('skillsText', 'Skills (comma-separated)', 'textarea', { rows: 3 }));
+    g.appendChild(field('skillsText', 'Skills (comma-separated). Fallback only: skills are read from the technical-skills section of the PDF resume you upload', 'textarea', { rows: 3 }));
     g.appendChild(field('coverLetter', 'Default cover letter text (used only for text boxes, not file uploads)', 'textarea', { rows: 6 }));
     skills.appendChild(g);
     root.appendChild(skills);
@@ -304,14 +304,20 @@
       const none = resumeParsed.filter((x) => !x.count).map((x) => x.company);
       if (none.length) text += `. None found for ${none.join(', ')}: check the resume has a Work Experience section with bullets under each company.`;
     } else if (resume) {
-      text += '. Bullet points were not read (only PDF resumes are read).';
+      text += '. Bullet points and skills were not read (only PDF resumes are read).';
+    }
+    if (resume && resumeParsed) {
+      const sk = Array.isArray(resume.skills) ? resume.skills : [];
+      text += sk.length
+        ? `. Technical skills read (${sk.length}): ${sk.join(', ')}`
+        : '. No technical skills section found: the saved skills list below is used instead.';
     }
     $('resumeInfo').textContent = text;
     $('removeResume').disabled = !resume;
     renderForm();
   }
 
-  const { parseResume, readBase64 } = window.JA.resumeUpload;
+  const { readBase64 } = window.JA.resumeUpload;
 
   async function onResumePicked() {
     const f = $('resumeFile').files[0];
@@ -322,9 +328,11 @@
     }
     const data = await readBase64(f);
     $('resumeInfo').textContent = 'Reading the resume…';
-    const parsed = await parseResume(f);
+    const read = await window.JA.resumeUpload.readResume(f);
+    const parsed = read ? read.parsed : null;
+    const skills = read ? read.skills : [];
     await chrome.storage.local.set({
-      resume: { name: f.name, type: f.type || 'application/pdf', size: f.size, data, parsed },
+      resume: { name: f.name, type: f.type || 'application/pdf', size: f.size, data, parsed, skills },
     });
     $('resumeFile').value = '';
     showResume();

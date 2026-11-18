@@ -44,7 +44,7 @@ The extension will not load without them. They are listed in `.gitignore` so the
 Open the extension's **Options** page (right-click the toolbar icon, then *Options*, or use the
 "Edit profile & resume" link in the popup).
 
-1. **Resume file**: choose your PDF. It is attached automatically to resume upload fields.
+1. **Resume file**: choose your PDF. It is attached automatically to resume upload fields, and its work-experience bullets and technical skills are read from it.
 2. **Profile**: either fill in the form, or paste JSON into the import box and press
    *Load JSON into form* (see `sample-profile.json` for the exact shape).
 3. Press **Save profile**.
@@ -94,6 +94,7 @@ single sections back on (for example only Skills and Education). Settings are re
 | Radios and Yes/No questions | Work authorization, sponsorship, relocation, 18+ |
 | Resume | Attached to the resume file input, then waits for sites that parse it (Lever) |
 | Embedded forms | Works inside iframes (e.g. Greenhouse embedded on a company site) |
+| Skills (from your resume) | When you upload a PDF resume, its **Technical Skills** section is read (category labels like `Languages:` are dropped, duplicates removed) and those skills are what gets filled into any Skills field, instead of a fixed list. The list found is shown on the settings page. If there is no PDF or no skills section, the comma-separated list saved on the settings page is the fallback |
 | Workday skills | The Skills box on the My Experience page: types each skill, presses Enter, ticks the exact match in the results. Skips skills already selected and reports the ones the company's list does not offer. It takes about a minute for a long list |
 | Sites | Generic matcher for any site, plus tuned adapters for **Greenhouse**, **Lever** and **Workday** (Workday so far only checked against a mock of its skills picker, not a live account) |
 

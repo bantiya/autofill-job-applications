@@ -601,11 +601,14 @@ async function main() {
     check('resume upload shown with bullet counts', await p.textContent('#resumeInfo'), (t) => /resume-sample\.pdf/.test(t) && /Example Corp 3, Sample Inc 2/.test(t));
     check('experience cards now show the bullets', await sec(1), (x) => /• Built sample marketplace APIs for item onboarding and feed ingestion, supporting many feed types with throttling and Kafka distribution across two regions\./.test(x) && /• Containerized and deployed services using Docker and Kubernetes\./.test(x) && !/NOT be picked up/.test(x));
 
+    check('resume info lists the skills read from the PDF', await p.textContent('#resumeInfo'), (x) => /Technical skills read \(9\): Java, Python, SQL, Spring Boot, React, Node\.js, AWS, Docker, Kubernetes/.test(x));
     await p.click('#save');
     await p.waitForFunction(() => /Saved/.test(document.getElementById('saveMsg').textContent));
     const stored = await sw.evaluate(() => chrome.storage.local.get(['profile', 'resume']));
     check('saved profile keeps skills only', [Object.keys(stored.profile).sort(), stored.profile.skills], [['coverLetter', 'skills'], ['Java', 'Python']]);
     check('saved resume has data and the parsed bullets', [!!stored.resume && stored.resume.data.length > 0, stored.resume.parsed.map((x) => [x.company, x.count])], [true, [['Example Corp', 3], ['Sample Inc', 2]]]);
+
+    check('saved resume keeps the extracted skills', stored.resume.skills, ['Java', 'Python', 'SQL', 'Spring Boot', 'React', 'Node.js', 'AWS', 'Docker', 'Kubernetes']);
 
     // Education in imported JSON is ignored, loudly.
     await p.fill('#json', JSON.stringify({ basics: { firstName: 'Zed' }, skills: ['Java', 'Python'], education: [{ school: 'Hacked University', degree: 'PhD' }] }));

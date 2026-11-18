@@ -15,7 +15,7 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
 endobj
 6 0 obj
-<< /Length 1519 >>
+<< /Length 1777 >>
 stream
 BT
 /F2 10 Tf 1 0 0 1 50 750 Tm (SAMPLE PERSON) Tj
@@ -37,6 +37,10 @@ BT
 /F1 10 Tf 1 0 0 1 50 486 Tm (• A project bullet that must NOT be picked up as job experience.) Tj
 /F2 10 Tf 1 0 0 1 50 464 Tm (EDUCATION) Tj
 /F1 10 Tf 1 0 0 1 50 450 Tm (Sample University   2017 - 2021) Tj
+/F2 10 Tf 1 0 0 1 50 428 Tm (TECHNICAL SKILLS) Tj
+/F1 10 Tf 1 0 0 1 50 414 Tm (Languages: Java, Python, SQL) Tj
+/F1 10 Tf 1 0 0 1 50 400 Tm (Frameworks: Spring Boot, React, Node.js) Tj
+/F1 10 Tf 1 0 0 1 50 386 Tm (Cloud & DevOps: AWS, Docker, Kubernetes) Tj
 ET
 endstream
 endobj
@@ -52,5 +56,5 @@ xref
 trailer
 << /Size 7 /Root 1 0 R >>
 startxref
-2020
+2278
 %%EOF
