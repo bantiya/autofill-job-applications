@@ -33,7 +33,7 @@
     {
       school: 'Unlisted State University',
       degree: 'Master of Science',
-      field: 'Computer Science',
+      field: 'Computer Information Systems – Artificial Intelligence Specialization',
       gpa: '',
       location: '',
       startDate: '2026-07',
@@ -43,7 +43,7 @@
       fieldFallbacks: [
         'Computer Information Systems', 'Artificial Intelligence',
         'Computer and Information Science', 'Computer and Information Sciences',
-        'Information Technology', 'Computer Science',
+        'Information Systems', 'Computer Science',
       ],
     },
     {
