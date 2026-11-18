@@ -26,6 +26,7 @@ a { color: #4f46e5; }
 .min:hover { background: #f3f4f6; }
 html.embedded body { width: auto; min-height: 100vh; box-sizing: border-box; padding-top: 16px; }
 
+.master { margin: 0 0 8px; padding: 4px 0; border-bottom: 1px solid #e5e7eb; font-weight: 600; }
 .sections { margin: 0 0 12px; }
 .sections summary { font-weight: 600; margin-bottom: 6px; }
 .sw { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; cursor: pointer; position: relative; color: #374151; }

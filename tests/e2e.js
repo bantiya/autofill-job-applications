@@ -130,6 +130,21 @@ async function main() {
     await sw.evaluate(() => chrome.storage.local.remove('sections'));
     await p.close();
 
+    // Universal radio-button switch: off = every radio untouched, everything else still filled.
+    {
+      const r = await open('lever-like.html');
+      await sw.evaluate(() => chrome.storage.local.set({ sections: { radios: false } }));
+      await fill(r);
+      check('radios off: no radio is checked', await r.$$eval('input[type=radio]:checked', (n) => n.length), 0);
+      check('radios off: other fields still filled', await r.$eval('#email', (e) => e.value), 'alex.example@example.com');
+      await sw.evaluate(() => chrome.storage.local.remove('sections'));
+      await r.close();
+      const r2 = await open('lever-like.html');
+      await fill(r2);
+      check('radios on (default): work auth radio filled', await r2.$$eval('input[type=radio]:checked', (n) => n.length), (n) => n > 0);
+      await r2.close();
+    }
+
     const g = await open('greenhouse-like.html');
     await sw.evaluate(() => chrome.storage.local.set({ sections: { experience: false, education: false } }));
     await fill(g);
@@ -151,6 +166,13 @@ async function main() {
     await pop.locator('#sections input[data-section="experience"]').evaluate((e) => e.click());
     await pop.waitForTimeout(200);
     check('switching off is stored', (await sw.evaluate(() => chrome.storage.local.get('sections'))).sections, { experience: false });
+    await sw.evaluate(() => chrome.storage.local.remove('sections'));
+    await pop.reload();
+    await pop.waitForSelector('#radioSwitch input', { state: 'attached' });
+    check('universal radio switch is on by default', await pop.$eval('#radioSwitch input', (i) => i.checked), true);
+    await pop.locator('#radioSwitch input').evaluate((e) => e.click());
+    await pop.waitForTimeout(200);
+    check('radio switch off is stored', (await sw.evaluate(() => chrome.storage.local.get('sections'))).sections, { radios: false });
     await sw.evaluate(() => chrome.storage.local.remove('sections'));
     await pop.close();
   }

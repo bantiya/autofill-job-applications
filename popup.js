@@ -25,8 +25,9 @@
     const state = sections || {};
     const box = $('sections');
     box.textContent = '';
-    SECTIONS.forEach(([id, label]) => {
+    const addSwitch = (target, id, label, title) => {
       const row = el('label', null, 'sw');
+      if (title) row.title = title;
       const input = el('input');
       input.type = 'checkbox';
       input.dataset.section = id;
@@ -39,8 +40,13 @@
       row.appendChild(el('span', label));
       row.appendChild(input);
       row.appendChild(el('i', null, 'slider'));
-      box.appendChild(row);
-    });
+      target.appendChild(row);
+    };
+    // Universal switch: when off, no radio button on the page is touched (they are still flagged if required).
+    const master = $('radioSwitch');
+    master.textContent = '';
+    addSwitch(master, 'radios', 'Radio buttons (all questions)', 'Turn off to leave every radio button untouched');
+    SECTIONS.forEach(([id, label]) => addSwitch(box, id, label));
   }
 
   if (window.top !== window) {

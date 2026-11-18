@@ -555,6 +555,7 @@
         if (skip(c)) continue;
 
         if (c.kind === 'radio') {
+          if (!sectionOn('radios')) continue; // universal "radio buttons" switch is off
           const gk = c.el.name || 'radio-' + groups.size;
           if (!groups.has(gk)) groups.set(gk, []);
           groups.get(gk).push(c);
